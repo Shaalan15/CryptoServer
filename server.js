@@ -10,13 +10,13 @@ const port = 2000
 const DB = "mongodb+srv://admin:Qfwm3772@cluster0.cri1n.mongodb.net/Huawei?retryWrites=true&w=majority";
 const SHA256 = require('crypto-js/sha256');
 const blockModel = require('./models/blockModel');
-var index = 0;
+const transactionModel=require('./models/transactionModel')
 
 class Block{
     constructor(from, to, amount, previoushash = ''){
+        this.index=0;
         this.from=from;
         this.to=to;
-        this.index=index;
         this.timestamp=Date.now();
         this.amount=amount;
         this.previoushash=previoushash;
@@ -32,7 +32,7 @@ class Block{
             this.nonce++;
             this.hash=this.calculateHash();
         }
-        console.log("Block Mined: " + this.hash)
+        console.log("Block mined: " + this.hash)
     }
 }
 
@@ -40,19 +40,18 @@ class Blockchain{
     constructor(){
         this.chain=[this.createGenesisBlock()];
         this.difficulty=4;
+        this.index = 1;
     }
     createGenesisBlock(){
-        const newBlock = new Block("null", "null", 0,);
-        newBlock.timestamp="1/1/1970";
-        newBlock.previoushash="0";
+        const newBlock = new Block("null", "null", 0);
         return newBlock;
     }
     getLatestBlock(){
         return this.chain[this.chain.length-1];
     }
     addBlock(newBlock){
-        index=index++;
-        newBlock.index=index;
+        newBlock.index=this.index;
+        this.index=this.index+1;
         newBlock.previoushash=this.getLatestBlock().hash;
         newBlock.mineBlock(this.difficulty);
         this.chain.push(newBlock);
@@ -71,6 +70,9 @@ class Blockchain{
             }
         }
         return true;
+    }
+    getIndex(){
+        return this.index;
     }
 }
 
@@ -100,9 +102,80 @@ app.get('/', (req,res) => {
         success: true
     })
 })
+app.get('/list-transactions', (req,res) => {
+    transactionModel.find().then(
+        (foundTransactions) => {
+            res.send(foundTransactions)
+        }
+    )
+})
 
-app.post('/postaction', (req,res) => {
+app.get('/list-blocks', (req,res) => {
+    blockModel.find().then(
+        (foundBlocks) => {
+            res.send(foundBlocks)
+        }
+    )
+})
 
+
+app.post('/add-transaction', (req,res) => {
+    let reqfrom=req.body.from;
+    let reqto=req.body.to;
+    let reqamount=req.body.amount;
+    const formData = {
+        "from": reqfrom,
+        "to": reqto,
+        "amount": reqamount,
+    }
+    
+    const newtransaction = new transactionModel(formData);
+    newtransaction
+    .save() //  Promise
+    .then( //resolved...
+        (dbDocument) => {
+              res.send(dbDocument);
+        }
+    )
+    .catch( //rejected...
+        (error) => {
+            res.send(error)
+        }
+    );
+
+})
+
+app.post('/mine-block',(req,res) => {
+    transactionModel.findOne({_id:req.body.id}).then((dbDocument) => {
+    let previoushash=yakhicoin.getLatestBlock().hash
+    const newblock = new Block(dbDocument.from, dbDocument.to, dbDocument.amount, previoushash);
+    yakhicoin.addBlock(newblock);
+
+    const formData = {
+        "index": newblock.index,
+        "from": newblock.from,
+        "to": newblock.to,
+        "timestamp":newblock.timestamp,
+        "amount": newblock.amount,
+        "previoushash": previoushash,
+        "hash": newblock.hash,
+        "nonce": newblock.nonce,
+    }
+    const newblockModel = new blockModel(formData);
+    newblockModel
+    .save() //  Promise
+    .then( //resolved...
+        (dbDocument) => {
+              res.send(dbDocument);
+        }
+    )
+    .catch( //rejected...
+        (error) => {
+            res.send(error)
+        }
+    );
+    transactionModel.deleteOne({_id:req.body.id})
+    })
 })
 
 
@@ -110,16 +183,8 @@ app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`)
 })
 
-let yakhicoin= new Blockchain();
-
-
-console.log("Mining Block 1...");
-yakhicoin.addBlock(new Block("me","you", 4));
-
-console.log("Mining Block 2...");
-yakhicoin.addBlock(new Block("you", "me", 10));
+let yakhicoin = new Blockchain();
+console.log("YakhiCoin is up and running!")
 
 //console.log(yakhicoin);
-console.log("IS is valid?" + yakhicoin.isChainValid());
-
-console.log(yakhicoin);
+//console.log("Is it valid?" + yakhicoin.isChainValid());

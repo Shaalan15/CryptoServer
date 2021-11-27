@@ -1,10 +1,12 @@
-const { TripleDES } = require('crypto-js');
 const mongoose = require('mongoose');
 
 // Creating the products schema
 const blockSchema = mongoose.Schema(
     {
-        // Name is required
+        index: {
+            type: Number,
+            required: true
+        },
         from: {
             type: String,
             required: true,
@@ -12,10 +14,6 @@ const blockSchema = mongoose.Schema(
         to: {
             type: String,
             required: true
-        },
-        index: {
-            type: Number,
-            required: true,
         },
         timestamp:{
             type: Date,
@@ -25,14 +23,20 @@ const blockSchema = mongoose.Schema(
             type: Number,
             required: true
         },
-        //dateCreated is set automatically
         previoushash: {
             type: String,
+            required: true
+        },
+        hash:{
+            type: String,
+            required: true
+        },
+        nonce:{
+            type: Number,
             required: true
         }
     });
 
-// Creating a model of the schema. Takes the collection name and the schema
 const blockModel = new mongoose.model('block', blockSchema);
 
 module.exports = blockModel;
