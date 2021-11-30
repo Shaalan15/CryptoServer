@@ -14,6 +14,10 @@ const transactionSchema = mongoose.Schema(
             type: Number,
             required: true
         },
+        fee: {
+            type: Number,
+            required: true
+        }
     });
 
 const transactionModel = new mongoose.model('transaction', transactionSchema);

@@ -23,6 +23,18 @@ const blockSchema = mongoose.Schema(
             type: Number,
             required: true
         },
+        fee:{
+            type: Number,
+            required: true
+        },
+        reward:{
+            type: Number,
+            required: true
+        },
+        miner:{
+            type: String,
+            required: true
+        },
         previoushash: {
             type: String,
             required: true
